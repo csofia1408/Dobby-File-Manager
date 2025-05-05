@@ -35,4 +35,22 @@ export class GcpStorageService {
 
     return `https://storage.googleapis.com/${this.bucketName}/${objectName}`;
   }
+  async listDocuments(idCitizen: number): Promise<any[]> {
+    const folderPrefix = `${idCitizen}/`;
+    const bucket = this.storage.bucket(this.bucketName);
+
+    const [files] = await bucket.getFiles({
+      prefix: folderPrefix,
+    });
+
+    const result = files.map((file) => ({
+      url: `https://storage.googleapis.com/${this.bucketName}/${file.name}`,
+      name: file.name.split('/').pop(),
+      size: file.metadata.size,
+      lastModified: file.metadata.updated,
+      contentType: file.metadata.contentType,
+    }));
+
+    return result;
+  }
 }

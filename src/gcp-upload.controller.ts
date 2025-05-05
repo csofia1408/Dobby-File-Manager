@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GcpStorageService } from './gcp-storage.service';
+import { Param, Get } from '@nestjs/common';
 
 @Controller()
 export class GcpUploadController {
@@ -26,6 +27,16 @@ export class GcpUploadController {
     return {
       message: 'Archivo subido exitosamente',
       url: url,
+    };
+  }
+  @Get('list/:idCitizen')
+  async listCitizenDocuments(@Param('idCitizen') idCitizen: string) {
+    const files = await this.gcpStorageService.listDocuments(
+      parseInt(idCitizen),
+    );
+    return {
+      message: 'Archivos listados correctamente',
+      files,
     };
   }
 }
