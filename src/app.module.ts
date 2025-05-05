@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { GcpStorageService } from './gcp-storage.service';
+import { GcpUploadController } from './gcp-upload.controller';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [GcpUploadController],
+  providers: [GcpStorageService],
 })
 export class AppModule {}
