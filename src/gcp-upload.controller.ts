@@ -1,39 +1,44 @@
-// src/gcp-upload.controller.ts
 import {
   Controller,
   Post,
-  UploadedFile,
+  UploadedFiles,
   UseInterceptors,
   Body,
+  Param,
+  Get,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { GcpStorageService } from './gcp-storage.service';
-import { Param, Get } from '@nestjs/common';
+import { IdCitizenDTO } from './dtos/documents.dto';
 
 @Controller()
 export class GcpUploadController {
   constructor(private readonly gcpStorageService: GcpStorageService) {}
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Body('idCitizen') idCitizen: string,
+  @UseInterceptors(FilesInterceptor('files'))
+  async uploadFiles(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() body: IdCitizenDTO,
   ) {
-    const url = await this.gcpStorageService.uploadFile(
-      file,
-      parseInt(idCitizen),
-    );
+    const parsedId = parseInt(body.idCitizen, 10);
+    const urls: string[] = [];
+
+    for (const file of files) {
+      const url = await this.gcpStorageService.uploadFile(file, parsedId);
+      urls.push(url);
+    }
+
     return {
-      message: 'Archivo subido exitosamente',
-      url: url,
+      message: 'Archivos subidos exitosamente',
+      urls: urls,
     };
   }
+
   @Get('list/:idCitizen')
-  async listCitizenDocuments(@Param('idCitizen') idCitizen: string) {
-    const files = await this.gcpStorageService.listDocuments(
-      parseInt(idCitizen),
-    );
+  async listCitizenDocuments(@Param() params: IdCitizenDTO) {
+    const parsedId = parseInt(params.idCitizen, 10);
+    const files = await this.gcpStorageService.listDocuments(parsedId);
     return {
       message: 'Archivos listados correctamente',
       files,

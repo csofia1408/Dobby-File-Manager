@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumberString,
+} from 'class-validator';
 
 export class saveDocumentDTO {
   @IsOptional()
@@ -43,4 +49,10 @@ export class ValidateDocumentDTO {
   @IsString()
   @ApiProperty({ description: 'Document title' })
   documentTitle: string;
+}
+
+export class IdCitizenDTO {
+  @IsNotEmpty()
+  @IsNumberString()
+  idCitizen: string;
 }
