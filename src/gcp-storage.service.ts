@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Storage } from '@google-cloud/storage';
 import { GCP_CONFIG } from './config/constants';
+import { UploadFileDTO } from './dtos/documents.dto';
 
 @Injectable()
 export class GcpStorageService {
@@ -8,15 +9,17 @@ export class GcpStorageService {
     projectId: GCP_CONFIG.PROJECT_ID,
     keyFilename: GCP_CONFIG.KEY_FILENAME,
   });
+
   private readonly bucketName = GCP_CONFIG.BUCKET_NAME;
 
   private getFolderPath(idCitizen: number): string {
     return `${idCitizen}/`;
   }
 
-  async uploadFile(
+  async uploadFileWithMetadata(
     file: Express.Multer.File,
     idCitizen: number,
+    metadata: UploadFileDTO,
   ): Promise<string> {
     const folderPath = this.getFolderPath(idCitizen);
     const objectName = `${folderPath}${file.originalname}`;
@@ -27,7 +30,10 @@ export class GcpStorageService {
       contentType: file.mimetype,
       metadata: {
         metadata: {
-          originalname: file.originalname,
+          operatorId: metadata.operatorId || '',
+          fileName: metadata.fileName,
+          mimetype: metadata.mimetype,
+          size: metadata.size.toString(),
           citizenId: idCitizen.toString(),
         },
       },
@@ -50,6 +56,7 @@ export class GcpStorageService {
       size: file.metadata.size,
       lastModified: file.metadata.updated,
       contentType: file.metadata.contentType,
+      metadata: file.metadata.metadata, // <-- Aquí también devuelves los metadatos personalizados
     }));
   }
 }

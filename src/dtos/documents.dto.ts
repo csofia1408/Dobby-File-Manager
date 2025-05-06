@@ -1,54 +1,35 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsArray,
   IsNotEmpty,
-  IsOptional,
   IsString,
   IsNumberString,
+  IsOptional,
 } from 'class-validator';
 
-export class saveDocumentDTO {
-  @IsOptional()
+export class UploadFileDTO {
   @IsString()
-  @ApiProperty({ description: "GovCarpeta's Operator ID" })
+  @ApiProperty({ description: 'Operator ID' })
   operatorId?: string;
 
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({ description: 'File name' })
+  fileName: string;
+
   @IsOptional()
-  @IsArray()
-  @ApiProperty({ description: 'Document metadata' })
-  metadata?: Record<string, string>;
-
   @IsNotEmpty()
   @IsString()
-  @ApiProperty({ description: 'Document title' })
-  documentTitle: string;
-}
-
-export class DocumentPackageDTO {
-  @IsNotEmpty()
-  @IsString()
-  @ApiProperty({ description: "GovCarpeta's Operator ID" })
-  operatorId: string;
+  @ApiProperty({ description: 'File MIME type' })
+  mimetype: string;
 
   @IsNotEmpty()
-  @IsArray()
-  @ApiProperty({
-    description: 'List of document key that should be in the package',
-  })
-  keys: Array<string>;
-}
-
-export class ValidateDocumentDTO {
-  @IsNotEmpty()
-  @IsString()
-  @ApiProperty({ description: "Document's url to validate" })
-  fileUrl: string;
+  @ApiProperty({ description: 'File size in bytes' })
+  size: number;
 
   @IsNotEmpty()
-  @IsString()
-  @ApiProperty({ description: 'Document title' })
-  documentTitle: string;
+  @ApiProperty({ description: 'Citizen ID associated with the file' })
+  idCitizen: number;
 }
 
 export class IdCitizenDTO {

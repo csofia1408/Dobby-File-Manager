@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { GcpStorageService } from './gcp-storage.service';
-import { IdCitizenDTO } from './dtos/documents.dto';
+import { IdCitizenDTO, UploadFileDTO } from './dtos/documents.dto';
 
 @Controller()
 export class GcpUploadController {
@@ -19,22 +19,28 @@ export class GcpUploadController {
   @UseInterceptors(FilesInterceptor('files'))
   async uploadFiles(
     @UploadedFiles() files: Express.Multer.File[],
-    @Body() body: IdCitizenDTO,
+    @Body() body: IdCitizenDTO & { metadata: string },
   ) {
     const parsedId = parseInt(body.idCitizen, 10);
+    const metadataArray = JSON.parse(body.metadata) as UploadFileDTO[];
     const urls: string[] = [];
 
-    for (const file of files) {
-      const url = await this.gcpStorageService.uploadFile(file, parsedId);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const metadata = metadataArray[i];
+      const url = await this.gcpStorageService.uploadFileWithMetadata(
+        file,
+        parsedId,
+        metadata,
+      );
       urls.push(url);
     }
 
     return {
       message: 'Archivos subidos exitosamente',
-      urls: urls,
+      urls,
     };
   }
-
   @Get('list/:idCitizen')
   async listCitizenDocuments(@Param() params: IdCitizenDTO) {
     const parsedId = parseInt(params.idCitizen, 10);
