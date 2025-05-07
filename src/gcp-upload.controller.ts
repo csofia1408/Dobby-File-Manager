@@ -7,10 +7,12 @@ import {
   Param,
   Get,
   Query,
+  Res,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { GcpStorageService } from './gcp-storage.service';
 import { IdCitizenDTO, UploadFileDTO } from './dtos/documents.dto';
+import { Response } from 'express';
 
 @Controller()
 export class GcpUploadController {
@@ -26,9 +28,15 @@ export class GcpUploadController {
     const metadataArray = JSON.parse(body.metadata) as UploadFileDTO[];
     const urls: string[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const metadata = metadataArray[i];
+    for (const file of files) {
+      const metadata = metadataArray.find(
+        (m) => m.fileName === file.originalname,
+      );
+
+      if (!metadata) {
+        throw new Error(`No metadata found for file ${file.originalname}`);
+      }
+
       const url = await this.gcpStorageService.uploadFileWithMetadata(
         file,
         parsedId,
@@ -42,20 +50,15 @@ export class GcpUploadController {
       urls,
     };
   }
-  @Get('download/:idCitizen/:fileName')
-  async downloadCitizenFile(
+
+  @Get('download-file/:idCitizen/:fileName')
+  async downloadFile(
     @Param('idCitizen') idCitizen: string,
     @Param('fileName') fileName: string,
+    @Res() res: Response,
   ) {
     const parsedId = parseInt(idCitizen, 10);
-    const signedUrl = await this.gcpStorageService.getSignedUrl(
-      parsedId,
-      fileName,
-    );
-    return {
-      message: 'Download URL generated successfully',
-      url: signedUrl,
-    };
+    return this.gcpStorageService.streamFileToResponse(parsedId, fileName, res);
   }
   @Post('create-folder')
   async createFolder(@Body() body: IdCitizenDTO) {
@@ -78,7 +81,34 @@ export class GcpUploadController {
     };
   }
 
-  @Post('sign-file-by-name')
+  @Post('transfer-files')
+  async copyFilesToMyFolder(
+    @Body()
+    body: {
+      sourceCitizenId: number;
+      targetCitizenId: number;
+      fileNames: string[];
+    },
+  ) {
+    const { sourceCitizenId, targetCitizenId, fileNames } = body;
+
+    if (!Array.isArray(fileNames) || fileNames.length === 0) {
+      throw new Error('fileNames must be a non-empty array');
+    }
+
+    const urls = await this.gcpStorageService.transferFilesBetweenFolders(
+      sourceCitizenId,
+      targetCitizenId,
+      fileNames,
+    );
+
+    return {
+      message: `Archivos copiados correctamente de la carpeta del ciudadano ${sourceCitizenId} a la del ciudadano ${targetCitizenId}`,
+      copiedFiles: urls,
+    };
+  }
+
+  @Post('sign-file')
   async signFileByName(
     @Query('idCitizen') idCitizen: string,
     @Query('fileName') fileName: string,
