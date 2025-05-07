@@ -6,6 +6,7 @@ import {
   Body,
   Param,
   Get,
+  Query,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { GcpStorageService } from './gcp-storage.service';
@@ -37,17 +38,60 @@ export class GcpUploadController {
     }
 
     return {
-      message: 'Archivos subidos exitosamente',
+      message: 'Files uploaded successfully',
       urls,
     };
   }
-  @Get('list/:idCitizen')
+  @Get('download/:idCitizen/:fileName')
+  async downloadCitizenFile(
+    @Param('idCitizen') idCitizen: string,
+    @Param('fileName') fileName: string,
+  ) {
+    const parsedId = parseInt(idCitizen, 10);
+    const signedUrl = await this.gcpStorageService.getSignedUrl(
+      parsedId,
+      fileName,
+    );
+    return {
+      message: 'Download URL generated successfully',
+      url: signedUrl,
+    };
+  }
+  @Post('create-folder')
+  async createFolder(@Body() body: IdCitizenDTO) {
+    const parsedId = parseInt(body.idCitizen, 10);
+    const folderUrl =
+      await this.gcpStorageService.createCitizenFolder(parsedId);
+
+    return {
+      message: 'folder created successfully',
+      folderUrl,
+    };
+  }
+  @Get('list-documents/:idCitizen')
   async listCitizenDocuments(@Param() params: IdCitizenDTO) {
     const parsedId = parseInt(params.idCitizen, 10);
     const files = await this.gcpStorageService.listDocuments(parsedId);
     return {
-      message: 'Archivos listados correctamente',
+      message: 'Documents listed successfully',
       files,
+    };
+  }
+
+  @Post('sign-file-by-name')
+  async signFileByName(
+    @Query('idCitizen') idCitizen: string,
+    @Query('fileName') fileName: string,
+  ) {
+    if (!idCitizen || !fileName) {
+      throw new Error('idCitizen and fileName are required');
+    }
+
+    const parsedId = parseInt(idCitizen, 10);
+    await this.gcpStorageService.signFileByName(parsedId, fileName);
+
+    return {
+      message: `File ${fileName} for citizen ${idCitizen} signed successfully`,
     };
   }
 }
