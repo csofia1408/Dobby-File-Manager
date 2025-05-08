@@ -189,4 +189,18 @@ export class GcpStorageService {
         };
       });
   }
+  async deleteFile(idCitizen: string, fileName: string): Promise<void> {
+    const filePath = `${this.getFolderPath(idCitizen)}${fileName}`;
+    const bucket = this.storage.bucket(this.bucketName);
+    const file = bucket.file(filePath);
+
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new NotFoundException(
+        `File "${fileName}" not found for citizen with ID ${idCitizen}`,
+      );
+    }
+
+    await file.delete();
+  }
 }

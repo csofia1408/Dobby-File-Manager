@@ -129,4 +129,18 @@ export class GcpUploadController {
       message: `File ${fileName} for citizen ${idCitizen} signed successfully`,
     };
   }
+  @Post('delete-file')
+  async deleteFile(
+    @Body() idCitizenDto: IdCitizenDTO,
+    @Body() fileNameDto: FileNameDTO,
+  ) {
+    const { idCitizen } = idCitizenDto;
+    const { fileName } = fileNameDto;
+
+    await this.gcpStorageService.deleteFile(idCitizen, fileName);
+
+    return {
+      message: `File "${fileName}" deleted successfully`,
+    };
+  }
 }
