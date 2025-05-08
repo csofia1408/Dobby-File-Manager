@@ -10,11 +10,15 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { GcpStorageService } from './gcp-storage.service';
-import { IdCitizenDTO, UploadFileDTO, FileNameDTO } from './dtos/documents.dto';
+import {
+  IdCitizenDTO,
+  UploadFileDTO,
+  FileNameDTO,
+} from '../dtos/documents.dto';
 import { Response } from 'express';
 
-@Controller()
-export class GcpUploadController {
+@Controller('gcp-storage')
+export class GcpStorageController {
   constructor(private readonly gcpStorageService: GcpStorageService) {}
 
   @Post('upload')

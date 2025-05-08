@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Storage } from '@google-cloud/storage';
-import { GCP_CONFIG } from './config/constants';
-import { UploadFileDTO } from './dtos/documents.dto';
+import { GCP_CONFIG } from '../config/constants';
+import { UploadFileDTO } from '../dtos/documents.dto';
 import { Response } from 'express';
 
 @Injectable()

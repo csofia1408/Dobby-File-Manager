@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
-import { GcpStorageService } from './../src/gcp-storage.service';
+import { GcpStorageService } from '../src/gcp-storage/gcp-storage.service';
 
 const mockGcpStorageService = {
   createCitizenFolder: jest.fn().mockResolvedValue('https://fake-url/folder/'),
