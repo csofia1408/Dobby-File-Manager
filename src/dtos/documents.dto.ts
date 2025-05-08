@@ -1,16 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsNotEmpty,
-  IsString,
-  IsNumberString,
-  IsOptional,
-  IsBoolean,
-} from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsBoolean } from 'class-validator';
 
 export class UploadFileDTO {
+  @IsNotEmpty()
   @IsString()
   @ApiProperty({ description: 'Operator ID' })
-  operatorId?: string;
+  operatorId: string;
 
   @IsNotEmpty()
   @IsString()
@@ -18,7 +13,6 @@ export class UploadFileDTO {
   fileName: string;
 
   @IsOptional()
-  @IsNotEmpty()
   @IsString()
   @ApiProperty({ description: 'File MIME type' })
   mimetype: string;
@@ -28,8 +22,9 @@ export class UploadFileDTO {
   size: number;
 
   @IsNotEmpty()
+  @IsString()
   @ApiProperty({ description: 'Citizen ID associated with the file' })
-  idCitizen: number;
+  idCitizen: string;
 
   @IsOptional()
   @IsBoolean()
@@ -42,6 +37,12 @@ export class UploadFileDTO {
 
 export class IdCitizenDTO {
   @IsNotEmpty()
-  @IsNumberString()
+  @IsString()
   idCitizen: string;
+}
+
+export class FileNameDTO {
+  @IsNotEmpty()
+  @IsString()
+  fileName: string;
 }

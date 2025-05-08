@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Storage } from '@google-cloud/storage';
 import { GCP_CONFIG } from './config/constants';
 import { UploadFileDTO } from './dtos/documents.dto';
-import { GetSignedUrlConfig } from '@google-cloud/storage';
 import { Response } from 'express';
 
 @Injectable()
@@ -14,10 +13,10 @@ export class GcpStorageService {
 
   private readonly bucketName = GCP_CONFIG.BUCKET_NAME;
 
-  private getFolderPath(idCitizen: number): string {
+  private getFolderPath(idCitizen: string): string {
     return `${idCitizen}/`;
   }
-  async createCitizenFolder(idCitizen: number): Promise<string> {
+  async createCitizenFolder(idCitizen: string): Promise<string> {
     const folderPath = this.getFolderPath(idCitizen);
     const bucket = this.storage.bucket(this.bucketName);
     const file = bucket.file(`${folderPath}.init`);
@@ -31,12 +30,18 @@ export class GcpStorageService {
   }
   async uploadFileWithMetadata(
     file: Express.Multer.File,
-    idCitizen: number,
+    idCitizen: string,
     metadata: UploadFileDTO,
   ): Promise<string> {
     const folderPath = this.getFolderPath(idCitizen);
     const objectName = `${folderPath}${file.originalname}`;
     const bucket = this.storage.bucket(this.bucketName);
+    const [filesInFolder] = await bucket.getFiles({ prefix: folderPath });
+    if (!filesInFolder || filesInFolder.length === 0) {
+      throw new NotFoundException(
+        `Folder not found for citizen with ID ${idCitizen}`,
+      );
+    }
     const blob = bucket.file(objectName);
 
     await blob.save(file.buffer, {
@@ -47,7 +52,7 @@ export class GcpStorageService {
           fileName: metadata.fileName,
           mimetype: metadata.mimetype,
           size: metadata.size.toString(),
-          citizenId: idCitizen.toString(),
+          citizenId: idCitizen,
           isSign: 'false',
         },
       },
@@ -55,25 +60,8 @@ export class GcpStorageService {
 
     return `https://storage.googleapis.com/${this.bucketName}/${objectName}`;
   }
-  async getSignedUrl(
-    idCitizen: number,
-    fileName: string,
-    expiresInSeconds = 60 * 10,
-  ): Promise<string> {
-    const filePath = `${this.getFolderPath(idCitizen)}${fileName}`;
-    const bucket = this.storage.bucket(this.bucketName);
-    const file = bucket.file(filePath);
 
-    const options: GetSignedUrlConfig = {
-      version: 'v4',
-      action: 'read',
-      expires: Date.now() + expiresInSeconds * 1000,
-    };
-
-    const [url] = await file.getSignedUrl(options);
-    return url;
-  }
-  async signFileByName(idCitizen: number, fileName: string): Promise<void> {
+  async signFileByName(idCitizen: string, fileName: string): Promise<void> {
     const folderPath = this.getFolderPath(idCitizen);
     const filePath = `${folderPath}${fileName}`;
     await this.signFile(filePath);
@@ -94,12 +82,32 @@ export class GcpStorageService {
     });
   }
   async transferFilesBetweenFolders(
-    sourceCitizenId: number,
-    targetCitizenId: number,
+    sourceCitizenId: string,
+    targetCitizenId: string,
     fileNames: string[],
   ): Promise<string[]> {
     const bucket = this.storage.bucket(this.bucketName);
     const copiedFileUrls: string[] = [];
+
+    const sourceFolderPath = this.getFolderPath(sourceCitizenId);
+    const [sourceFolderFiles] = await bucket.getFiles({
+      prefix: sourceFolderPath,
+    });
+    if (!sourceFolderFiles || sourceFolderFiles.length === 0) {
+      throw new NotFoundException(
+        `Source folder not found for citizen with ID ${sourceCitizenId}`,
+      );
+    }
+
+    const targetFolderPath = this.getFolderPath(targetCitizenId);
+    const [targetFolderFiles] = await bucket.getFiles({
+      prefix: targetFolderPath,
+    });
+    if (!targetFolderFiles || targetFolderFiles.length === 0) {
+      throw new NotFoundException(
+        `Target folder not found for citizen with ID ${targetCitizenId}`,
+      );
+    }
 
     for (const fileName of fileNames) {
       const sourcePath = `${this.getFolderPath(sourceCitizenId)}${fileName}`;
@@ -107,6 +115,13 @@ export class GcpStorageService {
 
       const sourceFile = bucket.file(sourcePath);
       const targetFile = bucket.file(targetPath);
+
+      const [fileExists] = await sourceFile.exists();
+      if (!fileExists) {
+        throw new NotFoundException(
+          `File "${fileName}" not found in source folder for citizen with ID ${sourceCitizenId}`,
+        );
+      }
 
       await sourceFile.copy(targetFile);
 
@@ -128,14 +143,19 @@ export class GcpStorageService {
     return copiedFileUrls;
   }
   async streamFileToResponse(
-    idCitizen: number,
+    idCitizen: string,
     fileName: string,
     res: Response,
   ): Promise<void> {
     const folderPath = `${this.getFolderPath(idCitizen)}${fileName}`;
     const bucket = this.storage.bucket(this.bucketName);
     const file = bucket.file(folderPath);
-
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new NotFoundException(
+        `File "${fileName}" not found for citizen with ID ${idCitizen}`,
+      );
+    }
     const [metadata] = await file.getMetadata();
 
     res.set({
@@ -145,12 +165,16 @@ export class GcpStorageService {
 
     file.createReadStream().pipe(res);
   }
-  async listDocuments(idCitizen: number): Promise<any[]> {
+  async listDocuments(idCitizen: string): Promise<any[]> {
     const folderPrefix = this.getFolderPath(idCitizen);
     const bucket = this.storage.bucket(this.bucketName);
 
     const [files] = await bucket.getFiles({ prefix: folderPrefix });
-
+    if (!files || files.length === 0) {
+      throw new NotFoundException(
+        `No folder found for citizen with ID ${idCitizen}`,
+      );
+    }
     return files
       .filter((file) => !file.name.endsWith('.init'))
       .map((file) => {

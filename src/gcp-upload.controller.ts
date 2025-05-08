@@ -6,12 +6,11 @@ import {
   Body,
   Param,
   Get,
-  Query,
   Res,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { GcpStorageService } from './gcp-storage.service';
-import { IdCitizenDTO, UploadFileDTO } from './dtos/documents.dto';
+import { IdCitizenDTO, UploadFileDTO, FileNameDTO } from './dtos/documents.dto';
 import { Response } from 'express';
 
 @Controller()
@@ -24,8 +23,8 @@ export class GcpUploadController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body() body: IdCitizenDTO & { metadata: string },
   ) {
-    const parsedId = parseInt(body.idCitizen, 10);
-    const metadataArray = JSON.parse(body.metadata) as UploadFileDTO[];
+    const { idCitizen, metadata } = body;
+    const metadataArray = JSON.parse(metadata) as UploadFileDTO[];
     const urls: string[] = [];
 
     for (const file of files) {
@@ -39,7 +38,7 @@ export class GcpUploadController {
 
       const url = await this.gcpStorageService.uploadFileWithMetadata(
         file,
-        parsedId,
+        idCitizen,
         metadata,
       );
       urls.push(url);
@@ -53,16 +52,23 @@ export class GcpUploadController {
 
   @Get('download-file/:idCitizen/:fileName')
   async downloadFile(
-    @Param('idCitizen') idCitizen: string,
-    @Param('fileName') fileName: string,
+    @Param() idCitizenDto: IdCitizenDTO,
+    @Param() fileNameDto: FileNameDTO,
     @Res() res: Response,
   ) {
-    const parsedId = parseInt(idCitizen, 10);
-    return this.gcpStorageService.streamFileToResponse(parsedId, fileName, res);
+    const { idCitizen } = idCitizenDto;
+    const { fileName } = fileNameDto;
+
+    return this.gcpStorageService.streamFileToResponse(
+      idCitizen,
+      fileName,
+      res,
+    );
   }
+
   @Post('create-folder')
   async createFolder(@Body() body: IdCitizenDTO) {
-    const parsedId = parseInt(body.idCitizen, 10);
+    const parsedId = body.idCitizen;
     const folderUrl =
       await this.gcpStorageService.createCitizenFolder(parsedId);
 
@@ -73,8 +79,9 @@ export class GcpUploadController {
   }
   @Get('list-documents/:idCitizen')
   async listCitizenDocuments(@Param() params: IdCitizenDTO) {
-    const parsedId = parseInt(params.idCitizen, 10);
+    const parsedId = params.idCitizen;
     const files = await this.gcpStorageService.listDocuments(parsedId);
+
     return {
       message: 'Documents listed successfully',
       files,
@@ -82,11 +89,11 @@ export class GcpUploadController {
   }
 
   @Post('transfer-files')
-  async copyFilesToMyFolder(
+  async transferFilesToMyFolder(
     @Body()
     body: {
-      sourceCitizenId: number;
-      targetCitizenId: number;
+      sourceCitizenId: string;
+      targetCitizenId: string;
       fileNames: string[];
     },
   ) {
@@ -110,15 +117,13 @@ export class GcpUploadController {
 
   @Post('sign-file')
   async signFileByName(
-    @Query('idCitizen') idCitizen: string,
-    @Query('fileName') fileName: string,
+    @Body() idCitizenDto: IdCitizenDTO,
+    @Body() fileNameDto: FileNameDTO,
   ) {
-    if (!idCitizen || !fileName) {
-      throw new Error('idCitizen and fileName are required');
-    }
+    const { idCitizen } = idCitizenDto;
+    const { fileName } = fileNameDto;
 
-    const parsedId = parseInt(idCitizen, 10);
-    await this.gcpStorageService.signFileByName(parsedId, fileName);
+    await this.gcpStorageService.signFileByName(idCitizen, fileName);
 
     return {
       message: `File ${fileName} for citizen ${idCitizen} signed successfully`,
