@@ -25,7 +25,7 @@ export class GcpStorageService {
       contentType: 'application/x-empty',
     });
 
-    console.log(`Carpeta creada en la ruta: ${folderPath}`);
+    console.log(`Folder created at path: ${folderPath}`);
     return `https://storage.googleapis.com/${this.bucketName}/${folderPath}`;
   }
   async uploadFileWithMetadata(

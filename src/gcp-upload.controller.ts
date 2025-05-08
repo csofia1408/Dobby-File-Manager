@@ -110,7 +110,7 @@ export class GcpUploadController {
     );
 
     return {
-      message: `Archivos copiados correctamente de la carpeta del ciudadano ${sourceCitizenId} a la del ciudadano ${targetCitizenId}`,
+      message: `Files successfully copied from citizen ${sourceCitizenId}'s folder to citizen ${targetCitizenId}'s folder`,
       copiedFiles: urls,
     };
   }
