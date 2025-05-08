@@ -1,18 +1,27 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Storage } from '@google-cloud/storage';
-import { GCP_CONFIG } from '../config/constants';
 import { UploadFileDTO } from '../dtos/documents.dto';
 import { Response } from 'express';
 
 @Injectable()
 export class GcpStorageService {
-  private readonly storage = new Storage({
-    projectId: GCP_CONFIG.PROJECT_ID,
-    keyFilename: GCP_CONFIG.KEY_FILENAME,
-  });
+  private readonly storage: Storage;
+  private readonly bucketName: string;
 
-  private readonly bucketName = GCP_CONFIG.BUCKET_NAME;
+  constructor() {
+    this.storage = new Storage({
+      projectId: process.env.GCP_PROJECT_ID,
+      keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    });
 
+    this.bucketName =
+      process.env.GCS_BUCKET_NAME ||
+      (() => {
+        throw new Error(
+          'GCS_BUCKET_NAME is not defined in environment variables',
+        );
+      })();
+  }
   private getFolderPath(idCitizen: string): string {
     return `${idCitizen}/`;
   }
