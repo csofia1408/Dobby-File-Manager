@@ -7,7 +7,12 @@ dotenv.config();
 @Module({
   imports: [
     RabbitMQModule.forRoot({
-      exchanges: [],
+      exchanges: [
+        {
+          name: RABBITMQ_CONFIG.queues.documentRequest,
+          type: 'topic',
+        },
+      ],
       uri: `amqp://${process.env.RABBITMQ_USER}:${process.env.RABBITMQ_PASS}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}/${process.env.RABBITMQ_VHOST}`,
     }),
   ],
