@@ -17,8 +17,8 @@ export class UserConsumer {
     queue: UserConsumer.rabbitmqConfig.queues.documentRequest,
     queueOptions: {
       durable: true,
-      deadLetterExchange: 'users_request_lockhart_dlx',
-      deadLetterRoutingKey: 'users_request_lockhart.failed',
+      deadLetterExchange: 'users_request_dobby_dlx',
+      deadLetterRoutingKey: 'users_request_dobby.failed',
     },
     createQueueIfNotExists: true,
     allowNonJsonMessages: false,

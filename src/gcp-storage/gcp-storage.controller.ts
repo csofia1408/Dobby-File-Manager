@@ -81,6 +81,7 @@ export class GcpStorageController {
       folderUrl,
     };
   }
+
   @Get('list-documents/:idCitizen')
   async listCitizenDocuments(@Param() params: IdCitizenDTO) {
     const parsedId = params.idCitizen;
